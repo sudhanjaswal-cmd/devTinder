@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const validator = require("validator");
+const jwt = require("jsonwebtoken");
 
 const userSchema = new mongoose.Schema(
   {
@@ -17,10 +19,20 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+      validate(value) {
+        if (!validator.isEmail(value)) {
+          throw new Error("Invalid email address:" + value);
+        }
+      },
     },
     password: {
       type: String,
       required: true,
+      validate(value) {
+        if (!validator.isStrongPassword(value)) {
+          throw new Error("Enter a strong password:" + value);
+        }
+      },
     },
     age: {
       type: Number,
@@ -35,9 +47,14 @@ const userSchema = new mongoose.Schema(
         }
       },
     },
-    photourl: {
+    photoUrl: {
       type: String,
       default: "https://www.mjunction.in/wp-content/uploads/2020/09/Dummy.jpg",
+      validate(value) {
+        if (!validator.isURL(value)) {
+          throw new Error("Invalid Photo URL:" + value);
+        }
+      },
     },
     about: {
       type: String,
@@ -49,6 +66,14 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+userSchema.methods.getJWT = async function () {
+  const user = this;
+  const token = await jwt.sign({ _id: user._id }, "JASW@Tind@7890", {
+    expiresIn: "1d",
+  });
+};
+
 const User = mongoose.model("User", userSchema);
 
 module.exports = User;
